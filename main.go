@@ -60,6 +60,7 @@ type Game struct {
 // X
 
 func init() {
+	rand.Seed(time.Now().UnixNano())
 	// setting font
 	tt, err := opentype.Parse(fonts.MPlus1pRegular_ttf)
 	if err != nil {
@@ -95,27 +96,60 @@ func init() {
 	}
 }
 
+func (g *Game) moveLeft() bool {
+	if 0 < g.posY && g.layers[g.posX][g.posY-1] != tileBlock {
+		g.posY--
+		return true
+	}
+	return false
+}
+func (g *Game) moveRight() bool {
+	if g.posY < gridHeight-1 && g.layers[g.posX][g.posY+1] != tileBlock {
+		g.posY++
+		return true
+	}
+	return false
+}
+func (g *Game) moveUp() bool {
+	if 0 < g.posX && g.layers[g.posX-1][g.posY] != tileBlock {
+		g.posX--
+		return true
+	}
+	return false
+}
+func (g *Game) moveDown() bool {
+	if g.posX < gridWidth-1 && g.layers[g.posX+1][g.posY] != tileBlock {
+		g.posX++
+		return true
+	}
+	return false
+}
+
 func (g *Game) Update() error {
 	// handle key press
 	if inpututil.IsKeyJustPressed(ebiten.KeyA) {
-		if 0 < g.posY && g.layers[g.posX][g.posY-1] != tileBlock {
-			g.posY--
-		}
+		g.moveLeft()
 	} else if inpututil.IsKeyJustPressed(ebiten.KeyD) {
-		if g.posY < gridHeight-1 && g.layers[g.posX][g.posY+1] != tileBlock {
-			g.posY++
-		}
+		g.moveRight()
 	} else if inpututil.IsKeyJustPressed(ebiten.KeyW) {
-		if 0 < g.posX && g.layers[g.posX-1][g.posY] != tileBlock {
-			g.posX--
-		}
+		g.moveUp()
 	} else if inpututil.IsKeyJustPressed(ebiten.KeyS) {
-		if g.posX < gridWidth-1 && g.layers[g.posX+1][g.posY] != tileBlock {
-			g.posX++
-		}
+		g.moveDown()
 	} else if inpututil.IsKeyJustPressed(ebiten.KeyR) {
 		// reset
 		g.layers = newLayers()
+	} else if inpututil.IsKeyJustPressed(ebiten.KeyJ) {
+		for g.moveDown() {
+		}
+	} else if inpututil.IsKeyJustPressed(ebiten.KeyH) {
+		for g.moveLeft() {
+		}
+	} else if inpututil.IsKeyJustPressed(ebiten.KeyL) {
+		for g.moveRight() {
+		}
+	} else if inpututil.IsKeyJustPressed(ebiten.KeyK) {
+		for g.moveUp() {
+		}
 	}
 
 	// clear
@@ -195,7 +229,6 @@ func sampleLayers() [][]int {
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
 	layers := newLayers()
 	game := &Game{
 		layers: layers,
