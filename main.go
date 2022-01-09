@@ -77,7 +77,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	const xNum = screenWidth / tileSize
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(0.1, 0.1)
-	op.GeoM.Translate(50, 50)
+	op.GeoM.Translate(float64(50+5*g.posX), float64(50+5*g.posY))
 	screen.DrawImage(gopherImg, op)
 	// for _, row := range g.layers {
 	// 	for i, t := range row {
