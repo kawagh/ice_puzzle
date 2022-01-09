@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bufio"
 	_ "embed"
 	"fmt"
 	"math/rand"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"image/color"
@@ -46,8 +50,9 @@ var (
 	gopherImg     *ebiten.Image
 )
 
+type layers = [][]int
 type Game struct {
-	layers [][]int
+	layers layers
 	posX   int
 	posY   int
 }
@@ -214,6 +219,7 @@ func newLayers() [][]int {
 	layers[goalX][goalY] = tileGoal
 	return layers
 }
+
 func sampleLayers() [][]int {
 	return [][]int{
 		{0, 0, 0, 0, 1, 0, 0, 0, 0},
@@ -228,8 +234,64 @@ func sampleLayers() [][]int {
 	}
 }
 
+func getLayersFromFile(file string) layers {
+	fp, err := os.Open(file)
+	if err != nil {
+		panic(err)
+	}
+	defer fp.Close()
+
+	sc := bufio.NewScanner(fp)
+	sc.Scan()
+	hw := strings.Split(sc.Text(), " ")
+	var h, w int
+	h, err = strconv.Atoi(hw[0])
+	w, err = strconv.Atoi(hw[1])
+	if err != nil {
+		panic(err)
+	}
+	var sx, sy, gx, gy int
+	sc.Scan()
+	sxsy := strings.Split(sc.Text(), " ")
+	sc.Scan()
+	gxgy := strings.Split(sc.Text(), " ")
+	sx, err = strconv.Atoi(sxsy[0])
+	sy, err = strconv.Atoi(sxsy[1])
+	gx, err = strconv.Atoi(gxgy[0])
+	gy, err = strconv.Atoi(gxgy[1])
+	if err != nil {
+		panic(err)
+	}
+
+	layers := make([][]int, h)
+	for i := 0; i < h; i++ {
+		layers[i] = make([]int, w)
+	}
+	layers[sx][sy] = tileStart
+	layers[gx][gy] = tileGoal
+	for i := 0; i < h; i++ {
+		sc.Scan()
+		row := sc.Text()
+		for j, c := range row {
+			switch c {
+			case '.':
+				continue
+			case '#':
+				layers[i][j] = tileBlock
+			case 's':
+				layers[i][j] = tileStart
+			case 'g':
+				layers[i][j] = tileGoal
+			default:
+				panic("unknown character appeared")
+			}
+		}
+	}
+	return layers
+}
+
 func main() {
-	layers := newLayers()
+	layers := getLayersFromFile("resources/sample_layer.txt")
 	game := &Game{
 		layers: layers,
 	}
