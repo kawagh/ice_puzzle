@@ -3,6 +3,8 @@ package main
 import (
 	_ "embed"
 	"fmt"
+	"math/rand"
+	"time"
 
 	"image/color"
 	_ "image/png"
@@ -12,7 +14,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/hajimehoshi/ebiten/v2/text"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
 )
@@ -93,13 +94,17 @@ func (g *Game) Update() error {
 		if g.posX < gridWidth-1 && g.layers[g.posX+1][g.posY] != 1 {
 			g.posX++
 		}
+	} else if inpututil.IsKeyJustPressed(ebiten.KeyR) {
+		// reset
+		g.layers = newLayers()
 	}
 
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	text.Draw(screen, fmt.Sprintf("posX: %d, posY: %d", g.posX, g.posY), mfont, 10, 20, color.White)
+	ebitenutil.DebugPrint(screen, fmt.Sprintf("posX: %d, posY: %d", g.posX, g.posY))
+	ebitenutil.DebugPrintAt(screen, "Move by WASD, Reset by R", 150, 0)
 	const xNum = screenWidth / tileSize
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(0.1, 0.1)
@@ -129,19 +134,37 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 	return 320, 240
 }
 
+//generate layers
+func newLayers() [][]int {
+	layers := make([][]int, gridHeight)
+	for i := 0; i < gridHeight; i++ {
+		layers[i] = make([]int, gridWidth)
+	}
+	for i := 0; i < 10; i++ {
+		ri := rand.Intn(gridHeight * gridWidth)
+		layers[ri/gridWidth][ri%gridHeight] = 1
+	}
+	return layers
+}
+func sampleLayers() [][]int {
+	return [][]int{
+		{0, 0, 0, 0, 1, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 1, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 1, 0, 1, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 0, 0, 0},
+	}
+}
+
 func main() {
+	rand.Seed(time.Now().UnixNano())
+	layers := newLayers()
 	game := &Game{
-		layers: [][]int{
-			{0, 0, 0, 0, 1, 0, 0, 0, 0},
-			{0, 0, 0, 0, 0, 0, 0, 1, 0},
-			{0, 0, 0, 0, 0, 0, 0, 0, 0},
-			{0, 0, 0, 0, 0, 0, 0, 0, 0},
-			{0, 0, 0, 0, 0, 0, 0, 0, 0},
-			{0, 0, 0, 0, 0, 1, 0, 1, 0},
-			{0, 0, 0, 0, 0, 0, 0, 0, 0},
-			{0, 0, 0, 0, 0, 0, 0, 0, 0},
-			{0, 0, 0, 0, 0, 0, 0, 0, 0},
-		},
+		layers: layers,
 	}
 	ebiten.SetWindowSize(640, 480)
 	ebiten.SetWindowTitle("ice_puzzle")
