@@ -22,13 +22,17 @@ const (
 	screenHeight = 240
 	tileSize     = 16
 	tileXNum     = 25
+	gridWidth    = 9
+	gridHeight   = 9
 )
 
 var (
 	mfont font.Face
 
-	tileImg   *ebiten.Image
-	gopherImg *ebiten.Image
+	whiteTileImg  *ebiten.Image
+	cursorTileImg *ebiten.Image
+	redTileImg    *ebiten.Image
+	gopherImg     *ebiten.Image
 )
 
 type Game struct {
@@ -36,6 +40,13 @@ type Game struct {
 	posX   int
 	posY   int
 }
+
+// posX,posY follow below axis
+// +---->Y
+// |
+// |
+// v
+// X
 
 func init() {
 	// setting font
@@ -49,10 +60,15 @@ func init() {
 	)
 
 	// load images
-	tileImg, _, err = ebitenutil.NewImageFromFile("resources/gopher_front.png")
-	if err != nil {
-		log.Fatal(err)
-	}
+	whiteTileImg = ebiten.NewImage(tileSize, tileSize)
+	whiteTileImg.Fill(color.White)
+
+	cursorTileImg = ebiten.NewImage(tileSize, tileSize)
+	cursorTileImg.Fill(color.RGBA{50, 50, 50, 50})
+
+	redTileImg = ebiten.NewImage(tileSize, tileSize)
+	redTileImg.Fill(color.RGBA{255, 0, 0, 90})
+
 	gopherImg, _, err = ebitenutil.NewImageFromFile("resources/gopher_front.png")
 	if err != nil {
 		log.Fatal(err)
@@ -60,15 +76,25 @@ func init() {
 }
 
 func (g *Game) Update() error {
+	// handle key press
 	if inpututil.IsKeyJustPressed(ebiten.KeyA) {
-		g.posX--
+		if 0 < g.posY && g.layers[g.posX][g.posY-1] != 1 {
+			g.posY--
+		}
 	} else if inpututil.IsKeyJustPressed(ebiten.KeyD) {
-		g.posX++
+		if g.posY < gridHeight-1 && g.layers[g.posX][g.posY+1] != 1 {
+			g.posY++
+		}
 	} else if inpututil.IsKeyJustPressed(ebiten.KeyW) {
-		g.posY--
+		if 0 < g.posX && g.layers[g.posX-1][g.posY] != 1 {
+			g.posX--
+		}
 	} else if inpututil.IsKeyJustPressed(ebiten.KeyS) {
-		g.posY++
+		if g.posX < gridWidth-1 && g.layers[g.posX+1][g.posY] != 1 {
+			g.posX++
+		}
 	}
+
 	return nil
 }
 
@@ -77,18 +103,27 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	const xNum = screenWidth / tileSize
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(0.1, 0.1)
-	op.GeoM.Translate(float64(50+5*g.posX), float64(50+5*g.posY))
+	op.GeoM.Translate(float64(10+5*g.posY), float64(10+5*g.posX))
 	screen.DrawImage(gopherImg, op)
-	// for _, row := range g.layers {
-	// 	for i, t := range row {
-	// 		op := &ebiten.DrawImageOptions{}
-	// 		op.GeoM.Translate(float64(i%xNum)*tileSize, float64((i/xNum)*tileSize))
-	// 		sx := (t % tileXNum) * tileSize
-	// 		sy := (t / tileXNum) * tileSize
-	// 		screen.DrawImage(tileImg.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image), op)
-	// 	}
+	for i, row := range g.layers {
+		for j, t := range row {
+			op := &ebiten.DrawImageOptions{}
+			op.GeoM.Scale(0.7, 0.7)
+			op.GeoM.Translate(float64(tileSize*j+80), float64(tileSize*i+80))
+			if g.posX == i && g.posY == j {
+				screen.DrawImage(cursorTileImg, op)
 
-	// }
+			} else {
+				switch t {
+				case 1:
+					screen.DrawImage(redTileImg, op)
+				default:
+					screen.DrawImage(whiteTileImg, op)
+				}
+			}
+
+		}
+	}
 }
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
 	return 320, 240
@@ -97,9 +132,15 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 func main() {
 	game := &Game{
 		layers: [][]int{
-			{3, 3, 3},
-			{3, 3, 3},
-			{3, 3, 3},
+			{0, 0, 0, 0, 1, 0, 0, 0, 0},
+			{0, 0, 0, 0, 0, 0, 0, 1, 0},
+			{0, 0, 0, 0, 0, 0, 0, 0, 0},
+			{0, 0, 0, 0, 0, 0, 0, 0, 0},
+			{0, 0, 0, 0, 0, 0, 0, 0, 0},
+			{0, 0, 0, 0, 0, 1, 0, 1, 0},
+			{0, 0, 0, 0, 0, 0, 0, 0, 0},
+			{0, 0, 0, 0, 0, 0, 0, 0, 0},
+			{0, 0, 0, 0, 0, 0, 0, 0, 0},
 		},
 	}
 	ebiten.SetWindowSize(640, 480)
