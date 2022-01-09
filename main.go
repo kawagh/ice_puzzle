@@ -19,12 +19,20 @@ import (
 )
 
 const (
-	screenWidth  = 240
-	screenHeight = 240
-	tileSize     = 16
-	tileXNum     = 25
-	gridWidth    = 9
-	gridHeight   = 9
+	tileWhite = iota
+	tileStart
+	tileGoal
+	tileBlock
+)
+
+const (
+	tileSize   = 16
+	gridWidth  = 9
+	gridHeight = 9
+	startX     = 0
+	startY     = 0
+	goalX      = gridWidth - 1
+	goalY      = gridHeight - 1
 )
 
 var (
@@ -32,6 +40,8 @@ var (
 
 	whiteTileImg  *ebiten.Image
 	cursorTileImg *ebiten.Image
+	startTileImg  *ebiten.Image
+	goalTileImg   *ebiten.Image
 	redTileImg    *ebiten.Image
 	gopherImg     *ebiten.Image
 )
@@ -67,6 +77,15 @@ func init() {
 	cursorTileImg = ebiten.NewImage(tileSize, tileSize)
 	cursorTileImg.Fill(color.RGBA{50, 50, 50, 50})
 
+	startTileImg = ebiten.NewImage(tileSize, tileSize)
+	startTileImg.Fill(color.RGBA{0, 0, 255, 50})
+
+	goalTileImg = ebiten.NewImage(tileSize, tileSize)
+	goalTileImg.Fill(color.RGBA{50, 255, 0, 50})
+
+	cursorTileImg = ebiten.NewImage(tileSize, tileSize)
+	cursorTileImg.Fill(color.RGBA{50, 50, 50, 50})
+
 	redTileImg = ebiten.NewImage(tileSize, tileSize)
 	redTileImg.Fill(color.RGBA{255, 0, 0, 90})
 
@@ -79,23 +98,31 @@ func init() {
 func (g *Game) Update() error {
 	// handle key press
 	if inpututil.IsKeyJustPressed(ebiten.KeyA) {
-		if 0 < g.posY && g.layers[g.posX][g.posY-1] != 1 {
+		if 0 < g.posY && g.layers[g.posX][g.posY-1] != tileBlock {
 			g.posY--
 		}
 	} else if inpututil.IsKeyJustPressed(ebiten.KeyD) {
-		if g.posY < gridHeight-1 && g.layers[g.posX][g.posY+1] != 1 {
+		if g.posY < gridHeight-1 && g.layers[g.posX][g.posY+1] != tileBlock {
 			g.posY++
 		}
 	} else if inpututil.IsKeyJustPressed(ebiten.KeyW) {
-		if 0 < g.posX && g.layers[g.posX-1][g.posY] != 1 {
+		if 0 < g.posX && g.layers[g.posX-1][g.posY] != tileBlock {
 			g.posX--
 		}
 	} else if inpututil.IsKeyJustPressed(ebiten.KeyS) {
-		if g.posX < gridWidth-1 && g.layers[g.posX+1][g.posY] != 1 {
+		if g.posX < gridWidth-1 && g.layers[g.posX+1][g.posY] != tileBlock {
 			g.posX++
 		}
 	} else if inpututil.IsKeyJustPressed(ebiten.KeyR) {
 		// reset
+		g.layers = newLayers()
+	}
+
+	// clear
+	if g.posX == goalX && g.posY == goalY {
+		fmt.Println("clear")
+		g.posX = startX
+		g.posY = startY
 		g.layers = newLayers()
 	}
 
@@ -105,7 +132,6 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	ebitenutil.DebugPrint(screen, fmt.Sprintf("posX: %d, posY: %d", g.posX, g.posY))
 	ebitenutil.DebugPrintAt(screen, "Move by WASD, Reset by R", 150, 0)
-	const xNum = screenWidth / tileSize
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(0.1, 0.1)
 	op.GeoM.Translate(float64(10+5*g.posY), float64(10+5*g.posX))
@@ -120,8 +146,12 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 			} else {
 				switch t {
-				case 1:
+				case tileBlock:
 					screen.DrawImage(redTileImg, op)
+				case tileStart:
+					screen.DrawImage(startTileImg, op)
+				case tileGoal:
+					screen.DrawImage(goalTileImg, op)
 				default:
 					screen.DrawImage(whiteTileImg, op)
 				}
@@ -142,8 +172,12 @@ func newLayers() [][]int {
 	}
 	for i := 0; i < 10; i++ {
 		ri := rand.Intn(gridHeight * gridWidth)
-		layers[ri/gridWidth][ri%gridHeight] = 1
+		if ri != 0 && ri != gridHeight*gridWidth-1 {
+			layers[ri/gridWidth][ri%gridHeight] = tileBlock
+		}
 	}
+	layers[startX][startY] = tileStart
+	layers[goalX][goalY] = tileGoal
 	return layers
 }
 func sampleLayers() [][]int {
