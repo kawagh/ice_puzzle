@@ -47,7 +47,6 @@ var (
 	startTileImg  *ebiten.Image
 	goalTileImg   *ebiten.Image
 	redTileImg    *ebiten.Image
-	gopherImg     *ebiten.Image
 )
 
 type layers = [][]int
@@ -80,25 +79,18 @@ func init() {
 	whiteTileImg = ebiten.NewImage(tileSize, tileSize)
 	whiteTileImg.Fill(color.White)
 
-	cursorTileImg = ebiten.NewImage(tileSize, tileSize)
-	cursorTileImg.Fill(color.RGBA{50, 50, 50, 50})
-
 	startTileImg = ebiten.NewImage(tileSize, tileSize)
 	startTileImg.Fill(color.RGBA{0, 0, 255, 50})
 
 	goalTileImg = ebiten.NewImage(tileSize, tileSize)
 	goalTileImg.Fill(color.RGBA{50, 255, 0, 50})
 
-	cursorTileImg = ebiten.NewImage(tileSize, tileSize)
-	cursorTileImg.Fill(color.RGBA{50, 50, 50, 50})
-
 	redTileImg = ebiten.NewImage(tileSize, tileSize)
 	redTileImg.Fill(color.RGBA{255, 0, 0, 90})
 
-	gopherImg, _, err = ebitenutil.NewImageFromFile("resources/gopher_front.png")
-	if err != nil {
-		log.Fatal(err)
-	}
+	cursorTileImg = ebiten.NewImage(tileSize, tileSize)
+	cursorTileImg.Fill(color.RGBA{50, 50, 50, 50})
+
 }
 
 func (g *Game) moveLeft() bool {
@@ -170,11 +162,7 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	ebitenutil.DebugPrint(screen, fmt.Sprintf("posX: %d, posY: %d", g.posX, g.posY))
-	ebitenutil.DebugPrintAt(screen, "Move by WASD, Reset by R", 150, 0)
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Scale(0.1, 0.1)
-	op.GeoM.Translate(float64(10+5*g.posY), float64(10+5*g.posX))
-	screen.DrawImage(gopherImg, op)
+	ebitenutil.DebugPrintAt(screen, "Move by WASD, Warp by HJKL, Regenerate by R", 0, 30)
 	for i, row := range g.layers {
 		for j, t := range row {
 			op := &ebiten.DrawImageOptions{}
