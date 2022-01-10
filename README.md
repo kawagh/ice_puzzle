@@ -1,6 +1,12 @@
 # ice_puzzle
+![](./img.png)
+## run
+```
+go run main.go
+```
 
-## format
+## solver
+- solver.py solve the puzzle from text file from below format
 ```
 H W
 sx sy
@@ -9,3 +15,5 @@ s..
 ...
 ..g
 ```
+## to improve
+- [ ] auto-generate appropriate-level puzzle by using solver
