@@ -1,8 +1,14 @@
 # ice_puzzle
+simple 2D-grid game made with [Ebiten](https://ebiten.org/)
+
 ![](./img.png)
 ## run
 ```
 go run main.go
+```
+or
+```
+./ice_puzzle
 ```
 
 ## solver
