@@ -6,11 +6,6 @@ simple 2D-grid game made with [Ebiten](https://ebiten.org/)
 ```
 go run main.go
 ```
-or
-```
-./ice_puzzle
-```
-
 ## solver
 - solver.py solve the puzzle from text file from below format
 ```

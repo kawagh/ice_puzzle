@@ -33,10 +33,6 @@ const (
 	tileSize   = 16
 	gridWidth  = 9
 	gridHeight = 9
-	startX     = 0
-	startY     = 0
-	goalX      = gridWidth - 1
-	goalY      = gridHeight - 1
 )
 
 var (
@@ -50,10 +46,19 @@ var (
 )
 
 type layers = [][]int
-type Game struct {
+
+type Puzzle struct {
 	layers layers
+	sx     int
+	sy     int
+	gx     int
+	gy     int
+}
+
+type Game struct {
 	posX   int
 	posY   int
+	puzzle Puzzle
 }
 
 // posX,posY follow below axis
@@ -94,32 +99,37 @@ func init() {
 }
 
 func (g *Game) moveLeft() bool {
-	if 0 < g.posY && g.layers[g.posX][g.posY-1] != tileBlock {
+	if 0 < g.posY && g.puzzle.layers[g.posX][g.posY-1] != tileBlock {
 		g.posY--
 		return true
 	}
 	return false
 }
 func (g *Game) moveRight() bool {
-	if g.posY < gridHeight-1 && g.layers[g.posX][g.posY+1] != tileBlock {
+	if g.posY < gridHeight-1 && g.puzzle.layers[g.posX][g.posY+1] != tileBlock {
 		g.posY++
 		return true
 	}
 	return false
 }
 func (g *Game) moveUp() bool {
-	if 0 < g.posX && g.layers[g.posX-1][g.posY] != tileBlock {
+	if 0 < g.posX && g.puzzle.layers[g.posX-1][g.posY] != tileBlock {
 		g.posX--
 		return true
 	}
 	return false
 }
 func (g *Game) moveDown() bool {
-	if g.posX < gridWidth-1 && g.layers[g.posX+1][g.posY] != tileBlock {
+	if g.posX < gridWidth-1 && g.puzzle.layers[g.posX+1][g.posY] != tileBlock {
 		g.posX++
 		return true
 	}
 	return false
+}
+func (g *Game) newStage() {
+	g.puzzle = newPuzzle()
+	g.posX = g.puzzle.sx
+	g.posY = g.puzzle.sy
 }
 
 func (g *Game) Update() error {
@@ -134,7 +144,8 @@ func (g *Game) Update() error {
 		g.moveDown()
 	} else if inpututil.IsKeyJustPressed(ebiten.KeyR) {
 		// reset
-		g.layers = newLayers()
+		fmt.Println("reset")
+		g.newStage()
 	} else if inpututil.IsKeyJustPressed(ebiten.KeyJ) {
 		for g.moveDown() {
 		}
@@ -148,13 +159,10 @@ func (g *Game) Update() error {
 		for g.moveUp() {
 		}
 	}
-
 	// clear
-	if g.posX == goalX && g.posY == goalY {
+	if g.posX == g.puzzle.gx && g.posY == g.puzzle.gy {
 		fmt.Println("clear")
-		g.posX = startX
-		g.posY = startY
-		g.layers = newLayers()
+		g.newStage()
 	}
 
 	return nil
@@ -163,7 +171,7 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	ebitenutil.DebugPrint(screen, fmt.Sprintf("posX: %d, posY: %d", g.posX, g.posY))
 	ebitenutil.DebugPrintAt(screen, "Move by WASD, Warp by HJKL, Regenerate by R", 0, 30)
-	for i, row := range g.layers {
+	for i, row := range g.puzzle.layers {
 		for j, t := range row {
 			op := &ebiten.DrawImageOptions{}
 			op.GeoM.Scale(0.7, 0.7)
@@ -191,25 +199,36 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 	return 320, 240
 }
 
-//generate layers
-func newLayers() [][]int {
+// generate layers not always reach goal
+func newPuzzle() Puzzle {
 	layers := make([][]int, gridHeight)
+	ri := rand.Intn(gridHeight * gridWidth)
+	sx, sy := ri/gridWidth, ri%gridWidth
+	gri := rand.Intn(gridHeight * gridWidth)
+	gx, gy := gri/gridWidth, gri%gridWidth
+	for gx != sx && gy != sy {
+		gri := rand.Intn(gridHeight * gridWidth)
+		gx, gy = gri/gridWidth, gri%gridWidth
+	}
 	for i := 0; i < gridHeight; i++ {
 		layers[i] = make([]int, gridWidth)
 	}
 	for i := 0; i < 10; i++ {
 		ri := rand.Intn(gridHeight * gridWidth)
-		if ri != 0 && ri != gridHeight*gridWidth-1 {
-			layers[ri/gridWidth][ri%gridHeight] = tileBlock
+		rx, ry := ri/gridWidth, ri%gridWidth
+		if (rx == sx && ry == sy) || (rx == gx && ry == gy) {
+			continue
 		}
+		layers[rx][ry] = tileBlock
 	}
-	layers[startX][startY] = tileStart
-	layers[goalX][goalY] = tileGoal
-	return layers
+	layers[sx][sy] = tileStart
+	layers[gx][gy] = tileGoal
+
+	return Puzzle{layers, sx, sy, gx, gy}
 }
 
-func sampleLayers() [][]int {
-	return [][]int{
+func sampleLayers() layers {
+	return layers{
 		{0, 0, 0, 0, 1, 0, 0, 0, 0},
 		{0, 0, 0, 0, 0, 0, 0, 1, 0},
 		{0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -222,7 +241,7 @@ func sampleLayers() [][]int {
 	}
 }
 
-func getLayersFromFile(file string) layers {
+func getPuzzleFromFile(file string) Puzzle {
 	fp, err := os.Open(file)
 	if err != nil {
 		panic(err)
@@ -275,13 +294,14 @@ func getLayersFromFile(file string) layers {
 			}
 		}
 	}
-	return layers
+	return Puzzle{layers, sx, sy, gx, gy}
 }
 
 func main() {
-	layers := getLayersFromFile("resources/sample_layer.txt")
+	puzzle := getPuzzleFromFile("resources/sample_layer.txt")
+	// puzzle := newPuzzle()
 	game := &Game{
-		layers: layers,
+		puzzle: puzzle,
 	}
 	ebiten.SetWindowSize(640, 480)
 	ebiten.SetWindowTitle("ice_puzzle")
