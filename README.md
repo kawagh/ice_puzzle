@@ -6,8 +6,8 @@ simple 2D-grid game made with [Ebiten](https://ebiten.org/)
 ```
 go run main.go
 ```
-## solver
-- solver.py solve the puzzle from text file from below format
+## util
+- util.py solve the puzzle from text file from below format
 ```
 H W
 sx sy
@@ -16,5 +16,6 @@ s..
 ...
 ..g
 ```
+- util.py also can generate files
 ## to improve
-- [ ] auto-generate appropriate-level puzzle by using solver
+- [x] auto-generate puzzle by using solver

@@ -164,6 +164,10 @@ def main():
         while not ok:
             pz = generate()
             ok, step = solve(pz)
+
+            # too short
+            if step < 10:
+                ok = False
         save_puzzle(f"{i}.txt", pz)
 
 

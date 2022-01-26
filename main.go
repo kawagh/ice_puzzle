@@ -31,6 +31,7 @@ const (
 
 const (
 	tileSize   = 16
+	stageLimit = 10
 	gridWidth  = 9
 	gridHeight = 9
 )
@@ -56,9 +57,11 @@ type Puzzle struct {
 }
 
 type Game struct {
-	posX   int
-	posY   int
-	puzzle Puzzle
+	posX       int
+	posY       int
+	stageIdx   int
+	stageLimit int
+	puzzle     Puzzle
 }
 
 // posX,posY follow below axis
@@ -127,12 +130,15 @@ func (g *Game) moveDown() bool {
 	return false
 }
 func (g *Game) newStage() {
-	g.puzzle = newPuzzle()
+	g.puzzle = getPuzzleFromFile("resources/" + strconv.Itoa(g.stageIdx) + ".txt")
 	g.posX = g.puzzle.sx
 	g.posY = g.puzzle.sy
 }
 
 func (g *Game) Update() error {
+	if g.stageIdx == g.stageLimit {
+		return nil
+	}
 	// handle key press
 	if inpututil.IsKeyJustPressed(ebiten.KeyA) {
 		g.moveLeft()
@@ -144,8 +150,8 @@ func (g *Game) Update() error {
 		g.moveDown()
 	} else if inpututil.IsKeyJustPressed(ebiten.KeyR) {
 		// reset
-		fmt.Println("reset")
-		g.newStage()
+		g.posX = g.puzzle.sx
+		g.posY = g.puzzle.sy
 	} else if inpututil.IsKeyJustPressed(ebiten.KeyJ) {
 		for g.moveDown() {
 		}
@@ -161,16 +167,24 @@ func (g *Game) Update() error {
 	}
 	// clear
 	if g.posX == g.puzzle.gx && g.posY == g.puzzle.gy {
-		fmt.Println("clear")
-		g.newStage()
+		g.stageIdx++
+		if g.stageIdx != g.stageLimit {
+			g.newStage()
+		}
 	}
 
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	ebitenutil.DebugPrint(screen, fmt.Sprintf("posX: %d, posY: %d", g.posX, g.posY))
-	ebitenutil.DebugPrintAt(screen, "Move by WASD, Warp by HJKL, Regenerate by R", 0, 30)
+
+	if g.stageIdx == stageLimit {
+		ebitenutil.DebugPrintAt(screen, "CLEAR", 0, 0)
+		return
+	}
+
+	ebitenutil.DebugPrint(screen, fmt.Sprintf("posX: %d, posY: %d, stage: %d/%d", g.posX, g.posY, g.stageIdx+1, g.stageLimit))
+	ebitenutil.DebugPrintAt(screen, "Move by WASD, Warp by HJKL, Retry by R", 0, 30)
 	for i, row := range g.puzzle.layers {
 		for j, t := range row {
 			op := &ebiten.DrawImageOptions{}
@@ -298,10 +312,12 @@ func getPuzzleFromFile(file string) Puzzle {
 }
 
 func main() {
-	puzzle := getPuzzleFromFile("resources/sample_layer.txt")
-	// puzzle := newPuzzle()
+	puzzle := getPuzzleFromFile("resources/0.txt")
 	game := &Game{
-		puzzle: puzzle,
+		puzzle:     puzzle,
+		posX:       puzzle.sx,
+		posY:       puzzle.sy,
+		stageLimit: stageLimit,
 	}
 	ebiten.SetWindowSize(640, 480)
 	ebiten.SetWindowTitle("ice_puzzle")
