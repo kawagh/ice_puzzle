@@ -6,6 +6,9 @@ simple 2D-grid game made with [Ebiten](https://ebiten.org/)
 ```
 go run main.go
 ```
+### for windows
+run main.exe.
+
 ## util
 - util.py solve the puzzle from text file from below format
 ```
